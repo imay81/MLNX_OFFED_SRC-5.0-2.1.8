@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+# Get the package version
+package=knem
+version=`dpkg-query -W -f='${Version}' "$package-dkms" \
+    | sed -e 's/[+-].*//'`
+
+isadded=`dkms status -m "$name" -v "$version"`
+
+if [ "x${isadded}" = "x" ] ; then
+    dkms add -m "$package" -v "$version" || true
+fi
+
+if [ "$1" = 'configure' ] ; then
+    dkms build -m "$package" -v "$version" && dkms install -m "$package" -v "$version" --force || true
+fi
+
+# load knem
+/sbin/modprobe -r knem > /dev/null 2>&1 || true
+/sbin/modprobe knem > /dev/null 2>&1 || true
+
+# automatically load knem onboot
+if ! (grep -qw knem /etc/modules 2>/dev/null); then
+	echo knem >> /etc/modules || true
+fi
+
+#DEBHELPER#
+
+exit 0
